@@ -89,10 +89,10 @@ function Set-MyFolders{
 
     # Create a $HOME\.local and $HOME\.config folder to feel a little more linuxy
     
-    $localtarget = Get-Item "$HOME\.local"
+    $localtarget = "$HOME\.local"
     if (Test-Path -Path "$HOME\.local") {
         if (-not ($localtarget.Attributes -band [System.IO.FileAttributes]::Hidden)) {
-            $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
+            $(Get-Item $localtarget).Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
         }
         if (-not (Test-Path -Path "$HOME\.local\bin")) {
             # New-Item -ItemType Directory -Path $HOME\.local\bin
@@ -100,7 +100,7 @@ function Set-MyFolders{
         }
     } else {
         New-Item -ItemType Directory -Path $localtarget
-        $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
+        $(Get-Item $localtarget).Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
         New-Item -ItemType Directory -Path $localtarget\bin
     }
     # create $HOME\.config and hide it
