@@ -79,7 +79,9 @@ function Set-MyFolders{
 
     Write-Output "Setting up the bin folders..."
 
-    #Check for AppData\Local\Bin and create it if necessary
+    ###############################
+    ### Check for AppData\Local\Bin and create it if necessary
+    ###############################
     if (-not (Test-Path -Path $HOME\AppData\Local\Bin)) {
         Write-Host "Local\Bin not found in AppData.  Creating."
         New-Item -ItemType Directory $HOME\AppData\Local\Bin
@@ -87,33 +89,54 @@ function Set-MyFolders{
         Write-Host "$HOME\AppData\Local\Bin exists"
     }
 
-    # Create a $HOME\.local and $HOME\.config folder to feel a little more linuxy
-    
+    ###############################
+    ### Create a $HOME\.local
+    ###############################
     $localtarget = "$HOME\.local"
-    if (Test-Path -Path "$HOME\.local") {
-        if (-not ($localtarget.Attributes -band [System.IO.FileAttributes]::Hidden)) {
-            $(Get-Item $localtarget).Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
-        }
-        if (-not (Test-Path -Path "$HOME\.local\bin")) {
-            # New-Item -ItemType Directory -Path $HOME\.local\bin
-            New-Item -ItemType SymbolicLink -Path $HOME\.local\bin -Target "$Home\AppData\Local\Bin"
-        }
+    Write-Host -ForegroundColor Cyan "Checking if $localtarget folder exists ..."
+    if (-not (Test-Path -Path $localtarget)) {
+        Write-Host -ForgroundColor Green "Not found, creating $localtarget."
+        New-Item -ItemType Directory $localtarget
     } else {
-        New-Item -ItemType Directory -Path $localtarget
-        $(Get-Item $localtarget).Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
-        New-Item -ItemType Directory -Path $localtarget\bin
+        Write-Host -ForegroundColor Yellow "$localtarget already exists."
     }
+    Write-Host -ForegroundColor Cyan "Adding the 'Hidden' attribute to $localtarget..."
+    $(Get-Item -Force $localtarget).Attributes = $(Get-Item -Force $localtarget).Attributes -bor [System.IO.FileAttributes]::Hidden
+    
+    Write-Host -ForegroundColor Cyan "Checking for bin link..."
+    if (-not (Test-Path -Path $localtarget\bin)) {
+        Write-Host -ForegroundColor Green "Creating SymbolicLink for bin"
+        New-Item -ItemType SymbolicLink -Path $localtarget\bin -Target $HOME\AppData\Local\Bin
+    } else {
+        if ($(Get-Item -Force $localtarget\bin).LinkType -eq "SymbolicLink") {
+            Write-Host -ForegroundColor Yellow "bin target found, its target is $(Get-Item -Force $localtarget\bin).LinkTarget"
+            Write-Host -ForegroundColor Yellow "`t Is that right?"
+        } else {
+            Write-Host -ForegroundColor Yellow "bin target found. It doesn't appear to be a SymbolicLink."
+        }
+    }
+    
     # create $HOME\.config and hide it
-    if (Test-Path -Path "$HOME\.config") {
-        $configtarget = Get-Item "$HOME\.config"
-        if (-not ($localtarget.Attributes -band [System.IO.FileAttributes]::Hidden)) {
-            $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
+    $configtarget = "$HOME\.config"
+    write-host -ForegroundColor Cyan "Checking for $configtarget..."
+    if (-not (Test-Path -Path $configtarget)) {
+        Write-Host -ForegroundColor Green "$configtarget not found.  Creating..."
+        New-Item -ItemType Directory $configtarget
+    } else {
+        write-host -ForegroundColor Yellow "$configtarget exists."
+    }
+    Write-Host -ForegroundColor Cyan "Hiding $configtarget..."
+    $(Get-Item -Force $configtarget).Attributes = $(Get-Item -Force $configtarget).Attributes -bor [System.IO.FileAttributes]::Hidden
+    
+    ### Check to see if there's the default Windows Powershell profile directory
+    ### Make it if it doesn't exist
+    if (-not (Test-Path "$HOME\.config\powershell") -and (Test-Path "$HOME\.config")) {
+        if (-not (Test-Path "$HOME\Documents\Powershell")) {
+            New-Item -ItemType Directory $HOME\Documents\Powershell
         }
     }
-    if (-not (Test-Path "$HOME\.config\powershell") -and (Test-Path "$HOME\.config")) {
-        if (Test-Path "$HOME\Documents\Powershell") {
-            New-Item -ItemType SymbolicLink -Path "$HOME\.config\powershell" -Target "$HOME\Documents\Powershell"
-        }
+    if (-not (Test-Path "$configtarget\powershell")) {
+        New-Item -ItemType SymbolicLink -Path "$HOME\.config\powershell" -Target "$HOME\Documents\Powershell"
     }
 
 }
@@ -130,6 +153,13 @@ $apps = @{
 }
 
 # Inform the user and wait for input
+
+if (-not $IsWindows) {
+    Write-Host -ForegroundColor Red -BackgroundColor Black "This script is only for running on Windows."
+    exit
+}
+
+
 Write-Host "Setting up directories..."
 Set-MyFolders
 
