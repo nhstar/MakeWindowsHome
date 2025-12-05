@@ -88,9 +88,9 @@ function Set-MyFolders{
     }
 
     # Create a $HOME\.local and $HOME\.config folder to feel a little more linuxy
-
+    
+    $localtarget = Get-Item "$HOME\.local"
     if (Test-Path -Path "$HOME\.local") {
-        $localtarget = Get-Item "$HOME\.local"
         if (-not ($localtarget.Attributes -band [System.IO.FileAttributes]::Hidden)) {
             $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
         }
@@ -110,9 +110,9 @@ function Set-MyFolders{
             $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
         }
     }
-    if (-not (Test-Path "$HOME\.config\Powershell") -and (Test-Path "$HOME\.config")) {
+    if (-not (Test-Path "$HOME\.config\powershell") -and (Test-Path "$HOME\.config")) {
         if (Test-Path "$HOME\Documents\Powershell") {
-            New-Item -ItemType SymbolicLink -Path "$HOME\.config\Powershell" -Target "$HOME\Documents\Powershell"
+            New-Item -ItemType SymbolicLink -Path "$HOME\.config\powershell" -Target "$HOME\Documents\Powershell"
         }
     }
 
