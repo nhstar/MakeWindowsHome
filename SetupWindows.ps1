@@ -67,29 +67,54 @@ function Ensure-AppsInstalled {
     }
 }
 
-function Set-BinFolder {
-    Write-Output "Setting up bin folders..."
+function Set-MyFolders{
+    <#
+    .SYNOPSIS
+        Sets up my home .local and .config folders
+    .DESCRIPTION
+        This sets up some linuxy folders in the home directory, and creates symbolic links
+        back to windows style locations.  The purpose here is to let me use the same configs
+        in my dotfiles repo across OSes.
+    #>
 
-    # Create a local bin folder for my apps and scripts in a windowsy way
-    $applocalbin = "$HOME\AppData\Local\Bin"
+    Write-Output "Setting up the bin folders..."
 
-    $local = "$HOME\.local"
-
-    if (-not (Test-Path -Path $applocalbin)) {
-        New-Item -ItemType Directory $applocalbin
+    #Check for AppData\Local\Bin and create it if necessary
+    if (-not (Test-Path -Path $HOME\AppData\Local\Bin)) {
+        Write-Host "Local\Bin not found in AppData.  Creating."
+        New-Item -ItemType Directory $HOME\AppData\Local\Bin
+    } else {
+        Write-Host "$HOME\AppData\Local\Bin exists"
     }
-    
-    if (-not (Test-Path -Path $local)) {
-        New-Item -ItemType Directory $local\bin
-        $localbin.Attributes = $localbin.Attributes -bor [System.IO.FileAttributes]::Hidden
+
+    # Create a $HOME\.local and $HOME\.config folder to feel a little more linuxy
+
+    if (Test-Path -Path "$HOME\.local") {
+        $localtarget = Get-Item "$HOME\.local"
+        if (-not ($localtarget.Attributes -band [System.IO.FileAttributes]::Hidden)) {
+            $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
+        }
+        if (-not (Test-Path -Path "$HOME\.local\bin")) {
+            # New-Item -ItemType Directory -Path $HOME\.local\bin
+            New-Item -ItemType SymbolicLink -Path $HOME\.local\bin -Target "$Home\AppData\Local\Bin"
+        }
+    } else {
+        New-Item -ItemType Directory -Path $localtarget
+        $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
+        New-Item -ItemType Directory -Path $localtarget\bin
     }
-    
-    New-Item -ItemType SymbolicLink -Path "$local\bin" -Target "$applocalbin"
-
-    return true
-}
-
-function Test-Stuff{
+    # create $HOME\.config and hide it
+    if (Test-Path -Path "$HOME\.config") {
+        $configtarget = Get-Item "$HOME\.config"
+        if (-not ($localtarget.Attributes -band [System.IO.FileAttributes]::Hidden)) {
+            $localtarget.Attributes = $localtarget.Attributes -bor [System.IO.FileAttributes]::Hidden
+        }
+    }
+    if (-not (Test-Path "$HOME\.config\Powershell") -and (Test-Path "$HOME\.config")) {
+        if (Test-Path "$HOME\Documents\Powershell") {
+            New-Item -ItemType SymbolicLink -Path "$HOME\.config\Powershell" -Target "$HOME\Documents\Powershell"
+        }
+    }
 
 }
 
@@ -98,6 +123,25 @@ $apps = @{
     "git"   = "Git.Git"
     "7zip"  = "7zip.7zip"
     "vscode"= "Microsoft.VisualStudioCode"
+    "AutoHotkey" = "AutoHotkey.AutoHotkey"
+    "Starship" = "Starship.Starship"
+    "direnv" = "direnv.direnv"
+    "WindowsTerminal" = "Microsoft.WindowsTerminal"
 }
 
+# Inform the user and wait for input
+Write-Host "Setting up directories..."
+Set-MyFolders
+
+Write-Host "This script will install your chosen applications."
+$confirmation = Read-Host "Press Enter to continue or type 'exit' to stop"
+
+if ($confirmation -eq 'exit') {
+    Write-Host "Exiting the script."
+    exit
+}
+
+# Run the installation process
 Ensure-AppsInstalled -Apps $apps
+
+# Continue with the rest of your script
